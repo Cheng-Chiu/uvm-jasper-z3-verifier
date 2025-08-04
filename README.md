@@ -93,13 +93,13 @@ cd uvm_project
 ./run_fifo.sh      # FIFO buffer
 ```
 
-### JasperGold
+### JasperGold Formal
 ```bash
 cd jaspergold_project
 jaspergold -tcl run_fm_adder.tcl    # CSA
 jaspergold -tcl run_fm_fifo.tcl     # FIFO
 ```
-### Z3-SMT Solver
+### Z3 Netlist Proofs
 ```bash
 cd z3_project
 python3 cell_sat.py     # Verify RCA, CSA, and KSA netlists under synth/
