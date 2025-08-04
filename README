@@ -1,27 +1,106 @@
-# Adder Robustness Checker under Fault Injection (Arithmetic-Code ECC)
+# uvm-jasperz3-verifier
 
-Two Python scripts verify whether a synthesized 64-bit adder can hide a single-event upset (SEU) under an Arithmetic-Code ECC.
+A unified verification framework for realistic adder and FIFO designs, combining:
 
-| Script | What it does |
-|--------|--------------|
-| **cell_sat.py** | Reads a synthesized adder netlist plus the Rust-generated error list and asks Z3, for each listed error, whether a single-bit SEU can reproduce it. |
-| **cell_sat_independent.py** | Reads only the netlist and lets Z3 itself search for an SEU that yields an undetectable error, exploring possible errors on the fly. |
+- **UVM** for scalable, modular testbenches  
+- **Cadence JasperGold** for formal verification and coverage  
+- **Z3 SMT Solver** for netlist‐level functional proofs  
 
-## Underlying Workflow
-1. Netlist → Z3 translation, including SEU fault-injection model for internal wires XORing original signal and new primary one-hot input
-2. Z3 Solver, for a given modulus A and arithmetic weight w, check if there exist an input pair (a,b) and a flip position such that
-|faulty_sum − gold_sum| is a valid AN-code word of weight k?
+All RTL sources live under `rtl/`.
+
+---
+
+## Table of Contents
+
+1. [Features](#features)  
+2. [Repository Layout](#repository-layout)  
+3. [Getting Started](#getting-started)  
+   - [Prerequisites](#prerequisites)  
+4. [Usage](#usage)  
+   - [UVM Testbenches](#uvm-testbenches)  
+   - [JasperGold Formal](#jaspergold-formal)  
+   - [Z3 Netlist Proofs](#z3-netlist-proofs)   
+
+---
+
+## Features
+
+- **UVM**  
+  - Cleanly separated driver / monitor / transaction / sequence / scoreboard / reference-model  
+  - Agent & environment layers for both Carry-Select Adder (CSA) and FIFO buffer  
+- **JasperGold Formal**  
+  - Functional correctness proofs, edge‐case analysis, and coverage metrics  
+- **Z3 SMT**  
+  - Python‐based conversion of synthesized netlists (RCA, CSA, KSA) into SMT formulas  
+  - Automated equivalence checks via the Z3 API  
+
+---
+
+## Repository Layout
+
+```text
+├── README
+├── jaspergold_project
+│   ├── adder_verifier.sv
+│   ├── fifo_verifier.sv
+│   ├── run_fm_adder.tcl
+│   └── run_fm_fifo.tcl
+├── rtl
+│   ├── carry_select_adder.sv
+│   └── fifo.sv
+├── uvm_project
+│   ├── run_csa.sh
+│   ├── run_fifo.sh
+│   └── tb
+│       ├── csa
+│       │   ├── csa_if.sv
+│       │   ├── csa_pkg.sv
+│       │   └── tb_csa_top.sv
+│       └── fifo
+│           ├── fifo_if.sv
+│           ├── fifo_pkg.sv
+│           └── tb_fifo_top.sv
+└── z3_project
+    ├── cell_sat.py
+    └── synth
+        ├── carry_select_adder.vg
+        ├── kogge_stone_adder.vg
+        └── ripple_carry_adder.vg
+```
+## Getting Started
+
+### Prerequisites
+
+- **Simulator & UVM**  
+  - Any SystemVerilog simulator compliant with UVM 1.2+/IEEE 1800-2017 (e.g. VCS, Questa, Xcelium)  
+  - `$UVM_HOME` or simulator‐provided UVM package on your `+incdir`
+
+- **Cadence JasperGold**  
+  - Formal verification kit installed and licensed  
+  - Set `$JASPERGOLD_HOME` in your environment
+
+- **Python 3.9+**  
+  - Z3 Python bindings (`pip install z3-solver`)  
+  - PyVerilog (`pip install pyverilog`)
+
 
 ## Usage
-python3 cell_sat.py
-python3 cell_sat_independent.py
 
-## Interpreting script outputs
-❌ Undetectable errors can happen...: The solver found an instance of undetectable error, showing its inputs, SEU location, A value, etc.
-✅ No Undetectable errors with...: The solver cannot find an instance of undetectable error, and the given adder is robust with SEU at given A value and arithmetic weight error.
+### UVM Testbenches
+```bash
+cd uvm_project
+./run_csa.sh       # Carry-Select Adder
+./run_fifo.sh      # FIFO buffer
+```
 
-## Requirements
-* Python 3.9+
-* PyZ3 4.12+   (`pip install z3-solver`)
-* PyVerilog    (`pip install pyverilog`)
-* SymPy        (`pip install sympy`) – prime generator
+### JasperGold
+```bash
+cd jaspergold_project
+jaspergold -tcl run_fm_adder.tcl    # CSA
+jaspergold -tcl run_fm_fifo.tcl     # FIFO
+```
+### Z3-SMT Solver
+```bash
+cd z3_project
+python3 cell_sat.py     # Verify RCA, CSA, and KSA netlists under synth/
+```
