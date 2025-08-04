@@ -80,7 +80,7 @@ module fifo_verifier();
     assume property (cb.retry_deq);
     
     // Assert read-side equivalence, checking the expected output (GOAL)
-    // assert property (cb.rd_data_match);
+    assert property (cb.rd_data_match);
 
     // Coverpoints
     cover property (@(posedge clock) dut.occ == DEPTH); // full FIFO
