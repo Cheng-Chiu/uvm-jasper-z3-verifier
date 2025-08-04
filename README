@@ -1,0 +1,27 @@
+# Adder Robustness Checker under Fault Injection (Arithmetic-Code ECC)
+
+Two Python scripts verify whether a synthesized 64-bit adder can hide a single-event upset (SEU) under an Arithmetic-Code ECC.
+
+| Script | What it does |
+|--------|--------------|
+| **cell_sat.py** | Reads a synthesized adder netlist plus the Rust-generated error list and asks Z3, for each listed error, whether a single-bit SEU can reproduce it. |
+| **cell_sat_independent.py** | Reads only the netlist and lets Z3 itself search for an SEU that yields an undetectable error, exploring possible errors on the fly. |
+
+## Underlying Workflow
+1. Netlist → Z3 translation, including SEU fault-injection model for internal wires XORing original signal and new primary one-hot input
+2. Z3 Solver, for a given modulus A and arithmetic weight w, check if there exist an input pair (a,b) and a flip position such that
+|faulty_sum − gold_sum| is a valid AN-code word of weight k?
+
+## Usage
+python3 cell_sat.py
+python3 cell_sat_independent.py
+
+## Interpreting script outputs
+❌ Undetectable errors can happen...: The solver found an instance of undetectable error, showing its inputs, SEU location, A value, etc.
+✅ No Undetectable errors with...: The solver cannot find an instance of undetectable error, and the given adder is robust with SEU at given A value and arithmetic weight error.
+
+## Requirements
+* Python 3.9+
+* PyZ3 4.12+   (`pip install z3-solver`)
+* PyVerilog    (`pip install pyverilog`)
+* SymPy        (`pip install sympy`) – prime generator
